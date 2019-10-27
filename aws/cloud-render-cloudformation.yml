@@ -1,0 +1,308 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Outputs:
+  SourceBucket:
+    Description: The bucket where zipped .blend files are placed for rendering
+    Value: !Ref RenderBlendBucket
+  ResultsBucket:
+    Description: The bucket where completed zipped images are placed for collection
+    Value: !Ref RenderResultsBucket
+  RenderJobQueue:
+    Description: The AWS Batch queue to place render jobs on
+    Value: !Ref RenderJobQueue
+  RenderJobDefinition:
+    Description: The Job Definition used to render jobs
+    Value: !Ref RenderJobDefinition
+
+Resources:
+
+  # IAM Roles - you'll need to give CAPABILITY_IAM when deploying the stack
+  SpotFleetTaggingRole:
+    Type: AWS::IAM::Role
+    Description: Required for spot requests through AWS Batch
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service:
+              - spotfleet.amazonaws.com
+          Action: sts:AssumeRole
+      Path: '/'
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
+      
+  RenderingRole:
+    Type: AWS::IAM::Role
+    Description: Required for rendering jobs to run as
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service:
+              - ec2.amazonaws.com
+              - ecs-tasks.amazonaws.com              
+          Action: sts:AssumeRole
+      Path: '/'
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+  BatchManagementRole:
+    Type: AWS::IAM::Role
+    Description: Required for batch to manage the processing of rendering jobs
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service:
+              - batch.amazonaws.com
+              - ecs-tasks.amazonaws.com
+          Action: sts:AssumeRole
+      Path: '/'
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+
+  RenderingInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      Roles: 
+        - !Ref RenderingRole
+
+  # S3 buckets to hold the job and the output
+  RenderBlendBucket:
+    Type: AWS::S3::Bucket
+    Description: This is where zipped blends are placed, ready for rendering
+  RenderResultsBucket:
+    Type: AWS::S3::Bucket
+    Description: This is where you pick up your rendered files from
+
+  # Networking resources - a VPC for rendering
+  RenderingVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      InstanceTenancy: default
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: 
+        !Ref RenderingVpc
+      InternetGatewayId: 
+        !Ref InternetGateway
+
+  # We want a subnet in each Availability Zone
+  RenderingSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      CidrBlock: 10.0.0.0/24
+      MapPublicIpOnLaunch: true
+      VpcId: 
+        !Ref RenderingVpc
+      AvailabilityZone:
+        Fn::Select: 
+          - 0
+          - Fn::GetAZs: ""
+
+  RenderingSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      CidrBlock: 10.0.16.0/24
+      MapPublicIpOnLaunch: true
+      VpcId: 
+        !Ref RenderingVpc
+      AvailabilityZone:
+        Fn::Select: 
+          - 1
+          - Fn::GetAZs: ""
+
+  RenderingSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      CidrBlock: 10.0.32.0/24
+      MapPublicIpOnLaunch: true
+      VpcId: 
+        !Ref RenderingVpc
+      AvailabilityZone:
+        Fn::Select: 
+          - 2
+          - Fn::GetAZs: ""
+
+  RouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        !Ref RenderingVpc
+
+  RouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        !Ref RenderingVpc
+
+  RouteTable3:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        !Ref RenderingVpc
+
+  Route1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        !Ref RouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        !Ref InternetGateway
+
+  Route2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        !Ref RouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        !Ref InternetGateway
+
+  Route3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        !Ref RouteTable3
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        !Ref InternetGateway
+
+  SubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        !Ref RouteTable1
+      SubnetId:
+        !Ref RenderingSubnet1
+  
+  SubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        !Ref RouteTable2
+      SubnetId:
+        !Ref RenderingSubnet2
+    
+  SubnetRouteTableAssociatio3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        !Ref RouteTable3
+      SubnetId:
+        !Ref RenderingSubnet3
+  
+  RenderingSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Renering Security Group
+      VpcId:
+         !Ref RenderingVpc
+
+  # Batch Compute Environment
+  RenderingComputeEnvironment:
+    Type: AWS::Batch::ComputeEnvironment
+    Description: A compute environment for processing rendering jobs
+    Properties:
+      ComputeResources:
+        BidPercentage: 100
+        DesiredvCpus: 0
+        InstanceRole:
+          !GetAtt RenderingInstanceProfile.Arn
+        InstanceTypes: 
+          - optimal
+        MaxvCpus: 16
+        MinvCpus: 0
+        SpotIamFleetRole: 
+          !GetAtt SpotFleetTaggingRole.Arn
+        Subnets:
+          - !Ref RenderingSubnet1
+          - !Ref RenderingSubnet2
+          - !Ref RenderingSubnet3
+        Type: SPOT
+        SecurityGroupIds:
+          - !Ref RenderingSecurityGroup
+      Type: MANAGED
+      ServiceRole:
+        !Ref BatchManagementRole
+
+  # Batch Rendering Queue
+  RenderJobQueue:
+    Type: AWS::Batch::JobQueue
+    Description: Queue for rendering jobs
+    Properties:
+      ComputeEnvironmentOrder:
+        - Order: 1
+          ComputeEnvironment: !Ref RenderingComputeEnvironment
+      State: ENABLED
+      Priority: 1
+
+  # Batch Rendering Job Definition
+  RenderJobDefinition:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: container
+      Parameters:
+          blend: undefined.blend
+          scene: Scene
+          xres: 1920
+          yres: 1080
+          samples: 32
+          percentage: 100
+          startframe: -1
+          endframe: -1
+          step: 1
+      Timeout:
+        AttemptDurationSeconds: 3600 # 1 hour timeout!
+      ContainerProperties:
+        Environment:
+          -
+            Name: RENDER_SOURCE_BUCKET
+            Value: !Ref RenderBlendBucket
+          -
+            Name: RENDER_DEST_BUCKET
+            Value: !Ref RenderResultsBucket
+        Command:
+          - '-b'
+          - 'Ref::blend'
+          - '-S'
+          - 'Ref::scene'
+          - '-x'
+          - 'Ref::xres'
+          - '-y'
+          - 'Ref::yres'
+          - '-s'
+          - 'Ref::samples'
+          - '-p'
+          - 'Ref::percentage'
+          - '-f'
+          - 'Ref::startframe'
+          - '-e'
+          - 'Ref::endframe'
+          - '-t'
+          - 'Ref::step'
+        Memory: 4096
+        Privileged: true
+        JobRoleArn: 
+          !Ref RenderingRole
+        ReadonlyRootFilesystem: false
+        Vcpus: 2
+        Image: petebeat/blender:dev0.2
+        # ResourceRequirements:
+          # - 
+          #   Type: GPU
+          #   Value: 1
