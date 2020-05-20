@@ -62,6 +62,20 @@ def command_add(args):
     jobs.rootjobs.append(job)
     jobs.save()
 
+def command_break(args):
+    if not args.breaksize > 0:
+        raise Exception("Break size not specified.")
+
+    jobs = load(args)
+
+    rootjobs = jobs.rootjobs.copy()
+    for job in rootjobs:
+        if not any(job.children):
+            print("Breaking job...")
+            job.break_job(args.breaksize)
+    job.describe(True)
+    jobs.save()
+
 def command_process(args):
     jobs = load(args)
     manager = get_manager()
@@ -111,6 +125,8 @@ def do_main():
         command_init(args)
     elif args.command == 'configure':
         command_configure(args)
+    elif args.command == 'break':
+        command_break(args)
 
 if __name__ == '__main__':
     try:
