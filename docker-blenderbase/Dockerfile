@@ -1,7 +1,7 @@
 FROM nvidia/cuda
 
 # Largely based off https://github.com/ikester/blender-docker but updated
-# to Blender 2.80, and include some additional dependencies
+# to Blender 2.82, and include some additional dependencies
 LABEL authors="Peter Reay (peterareay@hotmail.com)"
 
 # A base image including Blender and its dependencies. This is a 
@@ -18,7 +18,8 @@ RUN apt-get update && \
 		libxi6 \
 		libxrender1 \
 		zip \
-		unzip && \
+		unzip \
+		xz-utils && \
 	apt-get -y autoremove && \
 	rm -rf /var/lib/apt/lists/*
 
@@ -31,11 +32,11 @@ ENV PATH="~/.local/bin/aws:~/.local/bin:/usr/local/blender:${PATH}"
 ENV PYTHONPATH="/root/scripts/:${PYTHONPATH}"
 
 # Which version of Blender to install
-ENV BLENDER_BZ2_URL https://download.blender.org/release/Blender2.80/blender-2.80-linux-glibc217-x86_64.tar.bz2
+ENV BLENDER_BZ2_URL https://download.blender.org/release/Blender2.82/blender-2.82a-linux64.tar.xz
 
 # Install Blender into /usr/local/blender
 RUN mkdir /usr/local/blender && \
-	curl -SL "$BLENDER_BZ2_URL" -o blender.tar.bz2 && \
-	tar -jxvf blender.tar.bz2 -C /usr/local/blender --strip-components=1 && \
-	rm blender.tar.bz2
+	curl -SL "$BLENDER_BZ2_URL" -o blender.tar.xz && \
+	tar -Jxvf blender.tar.xz -C /usr/local/blender --strip-components=1 && \
+	rm blender.tar.xz
 

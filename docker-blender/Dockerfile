@@ -1,4 +1,4 @@
-FROM petebeat/blenderbase
+FROM petebeat/blenderbase:dev0.4
 
 LABEL authors="Peter Reay (peterareay@hotmail.com)"
 
