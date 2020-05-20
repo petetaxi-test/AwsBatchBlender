@@ -1,1 +1,1 @@
-aws cloudformation deploy --template-file cloud-render-cloudformation.yml --stack-name test-stack --capabilities CAPABILITY_IAM
+aws cloudformation deploy --template-file cloud-render-cloudformation.yml --stack-name my-stack --capabilities CAPABILITY_IAM

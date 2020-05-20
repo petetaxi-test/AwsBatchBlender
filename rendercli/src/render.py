@@ -1,5 +1,6 @@
 import context
 import argparse
+import colorama
 from colorama import Fore, Style
 from src.render_job_list import RenderJobList
 from src.render_job import RenderJob
@@ -98,6 +99,7 @@ def get_environment():
     return RenderEnvironment.load() 
     
 def do_main():
+    colorama.init()
     args = parse_args()
     if args.command == 'add':
         command_add(args)
