@@ -30,6 +30,7 @@ class RenderJob():
         self.error = None
         self.startedAt = None
         self.stoppedAt = None
+        self.hash = None
 
     def prepare(self):
         if not self.blend_path:
@@ -89,6 +90,7 @@ class RenderJob():
         child.startframe = startframe
         child.endframe = endframe
         child.step = step
+        child.hash = self.hash
 
         self.add_child(child)
         child.prepare()
@@ -202,8 +204,12 @@ class RenderJob():
         # Include a file hash so we treat different versions of the same file
         # correctly without overwriting the blend used by existing jobs which
         # have previously been queued
-        hash = self._get_file_hash(self.blend_path)
-        self.blend_name = f"{basename}-{hash}"
+        if self.hash is None:
+            print("Making hash")
+            self.hash = self._get_file_hash(self.blend_path)
+            print(f"Got hash {self.hash}")
+        
+        self.blend_name = f"{basename}-{self.hash}"
 
         return "{blend}-{scene}-{xres}x{yres}s{samples}p{percentage}-from{startframe}to{endframe}j{step}" \
             .format(blend = self.blend_name, \
