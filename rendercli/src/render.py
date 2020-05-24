@@ -50,7 +50,7 @@ def command_add(args):
     job.source_blend_path = args.blend
     job.package = packer.pack(args.blend, args.additionalfile)
     job.description = args.description
-    job.additional_file_count = len(args.additionalfile)
+    job.additional_file_count = len(args.additionalfile) if args.additionalfile != None else 0
     job.scene = args.scene
     job.startframe = args.startframe
     job.endframe = args.endframe

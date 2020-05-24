@@ -25,8 +25,9 @@ class RenderPacker():
                 zipf.write(blend_for_zip, arcname='job.blend')
 
                 # TODO Support directories
-                for f in additional_files:
-                    zipf.write(f, arcname=os.path.basename(f))
+                if not additional_files is None:
+                    for f in additional_files:
+                        zipf.write(f, arcname=os.path.basename(f))
             
             package_name = f"{self._get_file_hash(zip_path)}"
             package_filename = f"Job.{package_name}.zip"
