@@ -25,7 +25,7 @@ done
 
 SOURCE_OBJECT=Job.${RENDER_BLEND}.zip
 DEST_OBJECT="Job.${RENDER_BLEND}-${RENDER_SCENE}-${RENDER_XRES}x${RENDER_YRES}s${RENDER_SAMPLES}p${RENDER_PERCENTAGE}-from${RENDER_STARTFRAME}to${RENDER_ENDFRAME}j${RENDER_STEP}.Results.zip"
-
+DEST_OBJECT="$(echo -e "${DEST_OBJECT}" | tr -d '[:space:]')"
 
 BLENDER=/usr/local/blender/blender
 PYTHON_SCRIPT=/root/scripts/do_render.py
@@ -36,8 +36,8 @@ OUTPUT_DIR=/tmp/render_output
 
 # Get the input ready to render
 mkdir ${BLEND_DIR}
-aws s3 cp s3://${RENDER_SOURCE_BUCKET}/${SOURCE_OBJECT} ${SOURCE_LOCAL_ZIP}
-unzip ${SOURCE_LOCAL_ZIP} -d ${BLEND_DIR}
+aws s3 cp "s3://${RENDER_SOURCE_BUCKET}/${SOURCE_OBJECT}" "${SOURCE_LOCAL_ZIP}"
+unzip "${SOURCE_LOCAL_ZIP}" -d "${BLEND_DIR}"
 
 BLEND_FILE=${BLEND_DIR}/job.blend
 
@@ -53,5 +53,5 @@ ${BLENDER} -b -noaudio "${BLEND_FILE}" -S "${RENDER_SCENE}" --python ${PYTHON_SC
 
 # Push the result to S3
 cd ${OUTPUT_DIR}
-zip -r /tmp/${DEST_OBJECT} .
-aws s3 cp /tmp/${DEST_OBJECT} s3://${RENDER_DEST_BUCKET}/${DEST_OBJECT}
+zip -r "/tmp/${DEST_OBJECT}" .
+aws s3 cp "/tmp/${DEST_OBJECT}" "s3://${RENDER_DEST_BUCKET}/${DEST_OBJECT}"

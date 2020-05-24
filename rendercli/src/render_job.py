@@ -1,6 +1,5 @@
 import os
 import re
-import hashlib
 import uuid
 import copy
 from datetime import datetime
@@ -12,9 +11,11 @@ class RenderJob():
     def __init__(self):
         self.id = str(uuid.uuid4())
         self.cloudid = ''
-        self.name = ''
-        self.blend_path = ''
-        self.blend_name = ''
+        self.description = ''
+        self.key = ''
+        self.source_blend_path = ''
+        self.additional_file_count = 0
+        self.package = '' 
         self.scene = ''
         self.xres = 1920
         self.yres = 1080
@@ -30,19 +31,19 @@ class RenderJob():
         self.error = None
         self.startedAt = None
         self.stoppedAt = None
-        self.hash = None
-
+        
     def prepare(self):
-        if not self.blend_path:
-            raise Exception("Blend file not specified.")
+        if not self.package:
+            raise Exception("Package not specified.")
 
-        if not os.path.exists(self.blend_path):
-            raise Exception("Blend file does not exist.")
+        # Check in package directory
+        # if not os.path.exists(self.blend_path):
+        #     raise Exception("Blend file does not exist.")
 
         if not self.scene:
             raise Exception("Scene not specified.")
 
-        self.name = self._make_name()
+        self.key = self._make_key()
 
         for child in self.children:
             child.prepare()
@@ -80,8 +81,7 @@ class RenderJob():
 
         self.prepare()
         child = RenderJob()        
-        child.blend_path = self.blend_path
-        child.blend_name = self.blend_name
+        child.package = self.package
         child.scene = self.scene
         child.xres = self.xres
         child.yres = self.yres
@@ -90,7 +90,6 @@ class RenderJob():
         child.startframe = startframe
         child.endframe = endframe
         child.step = step
-        child.hash = self.hash
 
         self.add_child(child)
         child.prepare()
@@ -98,7 +97,11 @@ class RenderJob():
     def to_dict(self):
         return {
             'id': str(self.id),
-            'blend_name': self.blend_name,
+            'source_blend_path': self.source_blend_path,
+            'description': self.description,
+            'package': self.package,
+            'additional_file_count': self.additional_file_count,
+            'key': self.key,
             'scene': self.scene,
             'xres': self.xres,
             'yres': self.yres,
@@ -109,8 +112,6 @@ class RenderJob():
             'step': self.step,
             'is_uploaded': self.is_uploaded, 
             'status': self.status.name,
-            'blend_path': self.blend_path,
-            'name': self.name,
             'cloudid': self.cloudid,
             'children': list(map(lambda c: c.to_dict(), self.children)),
             'error': self.error,
@@ -149,9 +150,11 @@ class RenderJob():
     def from_dict(cls, obj):
         result = RenderJob()
         result.id = obj['id']
-        result.name = obj['name']
-        result.blend_path = obj['blend_path']
-        result.blend_name = obj['blend_name']
+        result.description = obj['description']
+        result.source_blend_path = obj['source_blend_path']
+        result.additional_file_count = obj['additional_file_count']
+        result.package = obj['package']
+        result.key = obj['key']
         result.scene = obj['scene']
         result.xres = int(obj['xres'])
         result.yres = int(obj['yres'])
@@ -178,12 +181,12 @@ class RenderJob():
 
     @classmethod
     def get_str_header(cls):
-        return f"{Fore.WHITE + Style.BRIGHT}    {'Blend':<30} {'Scene':<15} {'Start':<5} {'End':<5} {'Step':<5} {'Sam':<5} {'Pct':<4} {'Status':<9} AwsId"
+        return f"{Fore.WHITE + Style.BRIGHT}    {'Job':<30} {'Scene':<15} {'Start':<5} {'End':<5} {'Step':<5} {'Sam':<5} {'Pct':<4} {'Status':<9} AwsId"
 
     def __str__(self):
         colour_code = Style.NORMAL + (Fore.YELLOW if self.is_root_job else Fore.BLUE)
         parent_mark = '---' if self.is_root_job else ' \\-'
-        blend_stub = self._first_and_last(self.blend_name, 30)
+        blend_stub = self._first_and_last(self.description if self.description else self.package, 30)
         cloudid = '' if len(self.children) > 0 else self.cloudid 
         return f"{colour_code}{parent_mark} {blend_stub:<30} {self.scene[:15]:<15} {self.startframe:<5} {self.endframe:<5} {self.step:<5} {self.samples:<5} {self.percentage:<4} {self.status.name:<9} {cloudid}"
 
@@ -196,23 +199,9 @@ class RenderJob():
             end_len = length - start_len - 2
             return string[:start_len] + '..' + string[whole_len - end_len:]
 
-    def _make_name(self):
-        filename = os.path.basename(self.blend_path)
-        basename = os.path.splitext(filename)[0]
-        basename = self._make_alpha(basename)
-
-        # Include a file hash so we treat different versions of the same file
-        # correctly without overwriting the blend used by existing jobs which
-        # have previously been queued
-        if self.hash is None:
-            print("Making hash")
-            self.hash = self._get_file_hash(self.blend_path)
-            print(f"Got hash {self.hash}")
-        
-        self.blend_name = f"{basename}-{self.hash}"
-
-        return "{blend}-{scene}-{xres}x{yres}s{samples}p{percentage}-from{startframe}to{endframe}j{step}" \
-            .format(blend = self.blend_name, \
+    def _make_key(self):
+        key = "{package}-{scene}-{xres}x{yres}s{samples}p{percentage}-from{startframe}to{endframe}j{step}" \
+            .format(package = self.package, \
                 scene = self._make_alpha(self.scene), \
                 xres = self.xres, \
                 yres = self.yres, \
@@ -221,15 +210,10 @@ class RenderJob():
                 startframe = self.startframe, \
                 endframe = self.endframe, \
                 step = self.step)
+        return key
 
     def _make_alpha(self, string):
         return re.sub(r'\W+', '', string)
-
-    def _get_file_hash(self, path):
-        with open(path, 'rb') as f:
-            bytes = f.read()
-            readable_hash = hashlib.sha256(bytes).hexdigest()
-            return readable_hash[:8]
 
     def _print_dates(self, job):
         if job.startedAt or job.stoppedAt:

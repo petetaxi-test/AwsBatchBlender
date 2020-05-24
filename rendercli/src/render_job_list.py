@@ -72,7 +72,7 @@ class RenderJobList:
             job.describe(False, dates=dates)
 
     def _save_as_csv(self, path):
-        with open(path, 'w') as f:
+        with open(path, 'w', newline='\n') as f:
             first_as_dict = RenderJob().to_dict()
             del first_as_dict['children']
             first_as_dict['parent'] = ""

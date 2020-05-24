@@ -48,10 +48,12 @@ def enable_cuda_devices():
         device.use = not accelerated or device.type in acceleratedTypes
         print('Device enabled ({type}) = {enabled}'.format(type=device.type, enabled=device.use))
 
+    return accelerated
+
 def do_run_process():
     args = parse_args()
     
-    enable_cuda_devices()
+    accelerated = enable_cuda_devices()
 
     scene = bpy.context.scene
 
@@ -61,8 +63,8 @@ def do_run_process():
     scene.render.resolution_y = args.yres
     scene.render.use_compositing = True if args.compositing is None else args.compositing
     scene.render.filepath = args.output if args.output else '/tmp/render_output/'
-    scene.render.tile_x = 256
-    scene.render.tile_y = 256
+    scene.render.tile_x = 256 if accelerated else 16
+    scene.render.tile_y = 256 if accelerated else 16
     
     scene.frame_step = args.step
     scene.frame_start = args.startframe if args.startframe >= 1 else scene.frame_start

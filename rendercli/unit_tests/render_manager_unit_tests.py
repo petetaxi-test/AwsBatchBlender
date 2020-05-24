@@ -16,7 +16,7 @@ class RenderManagerUnitTests(unittest.TestCase):
     def test_upload_job(self):
         s3 = self.get_s3_mock()
         m = RenderManager(self.get_test_environment(), s3=s3)
-        m.upload_blend(self.get_test_job())
+        m.upload_package(self.get_test_job())
         self.assertEqual(s3.upload_file.call_count, 1)       
 
     def test_submit_job_dry_run(self):

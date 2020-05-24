@@ -5,6 +5,7 @@ from os.path import expanduser
 import tempfile
 import boto3
 import botocore
+from botocore.exceptions import ClientError
 
 class BlobManager():
 
@@ -12,6 +13,7 @@ class BlobManager():
         self.environment = environment
         self.s3 = boto3.client('s3') if s3 is None else s3
         self.workdir = workdir if workdir else expanduser('~/rendering/work')
+        self.package_dir = expanduser('~/rendering/packages')
 
         if not os.path.exists(self.workdir):
             os.makedirs(self.workdir)
@@ -33,27 +35,27 @@ class BlobManager():
 
         os.remove(zip_path)
 
-    def upload_blend(self, job):
+    def upload_package(self, job):
         """Upload the blend file for this job, replacing it if it already exists."""
-        job.prepare()
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            blend_for_zip = os.path.join(tmpdirname, 'job.blend')
-            shutil.copy2(job.blend_path, blend_for_zip)
+        filename = self._get_blend_name(job)
+        package_path = os.path.join(self.package_dir, filename)
 
-            job_file = self._get_blend_name(job)
-            zip_path = os.path.join(tmpdirname, job_file)    
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                zipf.write(blend_for_zip, arcname='job.blend')
-
-            self.s3.upload_file(zip_path, self.environment.sourceBucket, job_file)
+        if not self._file_exists(self.environment.sourceBucket, filename):
+            self.s3.upload_file(package_path, self.environment.sourceBucket, filename)
 
     def get_job_dir(self, job):
-        return os.path.join(self.workdir, job.name)
+        return os.path.join(self.workdir, job.key)
 
     def _get_blend_name(self, job):
-        return f'Job.{job.blend_name}.zip'
+        return f'Job.{job.package}.zip'
 
     def _get_zip_name(self, job):
-        return f'Job.{job.name}.Results.zip'
+        return f'Job.{job.key}.Results.zip'
 
-
+    def _file_exists(self, bucket, key):
+        s3 = boto3.client('s3')
+        try:
+            s3.head_object(Bucket=bucket, Key=key)
+            return True
+        except ClientError:
+            return False

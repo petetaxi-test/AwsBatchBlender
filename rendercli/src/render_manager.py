@@ -28,9 +28,11 @@ class RenderManager():
                 if root.status in [RenderJobStatus.Success, RenderJobStatus.Failed]:
                     continue
 
+                root.prepare()
+
                 # Uploading may change the status so we write out the same line twice
                 print(str(root), end='\r')
-                self._upload_if_required(job_list, root, is_dry_run)
+                self._upload_if_required(job_list, root, False)
                 print(str(root), end='\r')
 
                 # Then leave it to this to write out the root job the final time
@@ -43,6 +45,7 @@ class RenderManager():
                 self._process_downloads(job_list, root)
             
             except Exception as ex:
+                print(ex)
                 root.error = ex.args[0]
                 self._set_job_status(job_list, root, RenderJobStatus.Failed)
 
@@ -66,18 +69,27 @@ class RenderManager():
 
     def _schedule_jobs(self, job_list, root, is_dry_run):
         if len(root.children) == 0:
-            if not root.is_scheduled and not is_dry_run:
-                self.batch_manager.schedule_job(root)
-                self._persist(job_list)
-                print(str(root))
+            if not root.is_scheduled:
+                if not is_dry_run:
+                    self.batch_manager.schedule_job(root)
+                    self._persist(job_list)
+                    print(str(root))
+                else:
+                    self._print_dry_run_job(root)            
         else:
             print(str(root))
             for child in root.children:
-                if not child.is_scheduled and not is_dry_run:
-                    print(str(child), end='\r')
-                    self.batch_manager.schedule_job(child)
-                    self._persist(job_list)
-                    print(str(child))
+                if not child.is_scheduled:
+                    if not is_dry_run:
+                        print(str(child), end='\r')
+                        self.batch_manager.schedule_job(child)
+                        self._persist(job_list)
+                        print(str(child))
+                    else:
+                        self._print_dry_run_job(child)
+
+    def _print_dry_run_job(self, job):
+        print(f"Dry run, would have scheduled: -b {job.package} -S \"{job.scene}\" -x {job.xres} -y {job.yres} -s {job.samples} -p {job.percentage} -f {job.startframe} -e {job.endframe} -t {job.step}")
 
     def _persist(self, job_list):
         if job_list.can_save:
@@ -85,7 +97,8 @@ class RenderManager():
 
     def _upload_if_required(self, job_list, job, is_dry_run):
         if not job.is_uploaded and not is_dry_run:
-            self.blob_manager.upload_blend(job)
+            print("Uploading blend")
+            self.blob_manager.upload_package(job)
             
             job.is_uploaded = True
             job.set_status(RenderJobStatus.Uploaded)
@@ -145,7 +158,7 @@ class RenderManager():
         shutil.rmtree(temp_dir)
 
     def get_output_dir(self, job):
-        return f"{job.blend_name}-{job.scene}-{job.xres}x{job.yres}s{job.samples}p{job.percentage}"
+        return f"{job.package}-{job._make_alpha(job.scene)}-{job.xres}x{job.yres}s{job.samples}p{job.percentage}"
 
     def _mark_finished(self, job_list, job):
         self._set_job_status(job_list, job, RenderJobStatus.Success)

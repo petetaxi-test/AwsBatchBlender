@@ -219,13 +219,13 @@ Resources:
     Description: A compute environment for processing rendering jobs
     Properties:
       ComputeResources:
-        BidPercentage: 100
+        BidPercentage: 50
         DesiredvCpus: 0
         InstanceRole:
           !GetAtt RenderingInstanceProfile.Arn
         InstanceTypes: 
           - optimal
-        MaxvCpus: 16
+        MaxvCpus: 128
         MinvCpus: 0
         SpotIamFleetRole: 
           !GetAtt SpotFleetTaggingRole.Arn
@@ -267,7 +267,9 @@ Resources:
           endframe: -1
           step: 1
       Timeout:
-        AttemptDurationSeconds: 3600 # 1 hour timeout!
+        AttemptDurationSeconds: 7200 # 2 hour timeout!
+      RetryStrategy:
+        Attempts: 3
       ContainerProperties:
         Environment:
           -
@@ -295,13 +297,13 @@ Resources:
           - 'Ref::endframe'
           - '-t'
           - 'Ref::step'
-        Memory: 4096
+        Memory: 65536
         Privileged: true
         JobRoleArn: 
           !Ref RenderingRole
         ReadonlyRootFilesystem: false
-        Vcpus: 2
-        Image: petebeat/blender:dev0.2
+        Vcpus: 16
+        Image: petebeat/blender:dev0.7
         # ResourceRequirements:
           # - 
           #   Type: GPU

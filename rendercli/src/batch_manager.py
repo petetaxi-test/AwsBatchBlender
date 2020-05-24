@@ -19,11 +19,11 @@ class BatchManager():
 
     def _submit_batch_job(self, job):
         response = self.batch.submit_job(
-            jobName = job.name,
+            jobName = job.key,
             jobQueue = self.environment.queueName,
             jobDefinition = self.environment.jobDefinition,
             parameters = {
-                'blend': job.blend_name,
+                'blend': job.package,
                 'scene': job.scene,
                 'xres': str(job.xres),
                 'yres': str(job.yres),

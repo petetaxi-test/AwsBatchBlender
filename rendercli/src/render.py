@@ -6,15 +6,18 @@ from src.render_job_list import RenderJobList
 from src.render_job import RenderJob
 from src.render_manager import RenderManager
 from src.render_environment import RenderEnvironment
+from src.render_packer import RenderPacker
 from src.batch_manager import BatchManager
 from src.blob_manager import BlobManager
 from src.stack_config_manager import StackConfigManager
+from src.render_job_status import RenderJobStatus
 
 def parse_args():
     parser = argparse.ArgumentParser('Manages cloud renders')
     parser.add_argument('command', type=str)
     parser.add_argument('-j', '--jobfile', required=False, type=str, default='joblist.csv')
     parser.add_argument('-b', '--blend', required=False, type=str, default=None)
+    parser.add_argument('-a', '--additionalfile', required=False, action='append')
     parser.add_argument('-S', '--scene', required=False, type=str, default="Scene")
     parser.add_argument('-x', '--xres', required=False, type=int, default=1920)
     parser.add_argument('-y', '--yres', required=False, type=int, default=1080)
@@ -24,7 +27,8 @@ def parse_args():
     parser.add_argument('-f', '--startframe', required=False, type=int, default=1)
     parser.add_argument('-e', '--endframe', required=False, type=int, default=-1)
     parser.add_argument('-k', '--breaksize', required=False, type=int, default=-1)
-    parser.add_argument('-d', '--dryrun', required=False, type=str, default='False')
+    parser.add_argument('-d', '--description', required=False, type=str)
+    parser.add_argument('-r', '--dryrun', required=False, type=str, default='False')
     parser.add_argument('--dates', required=False, type=str, default='False')
     parser.add_argument('--stackname', required=False, type=str)
     
@@ -39,9 +43,14 @@ def validate_add(args):
 def command_add(args):
     validate_add(args)
     jobs = load(args)
-    
+
+    packer = RenderPacker()        
+
     job = RenderJob()
-    job.blend_path = args.blend
+    job.source_blend_path = args.blend
+    job.package = packer.pack(args.blend, args.additionalfile)
+    job.description = args.description
+    job.additional_file_count = len(args.additionalfile)
     job.scene = args.scene
     job.startframe = args.startframe
     job.endframe = args.endframe
@@ -70,7 +79,7 @@ def command_break(args):
 
     rootjobs = jobs.rootjobs.copy()
     for job in rootjobs:
-        if not any(job.children):
+        if not any(job.children) or job.status != RenderJobStatus.Pending:
             print("Breaking job...")
             job.break_job(args.breaksize)
     job.describe(True)
