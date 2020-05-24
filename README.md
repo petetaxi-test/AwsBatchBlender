@@ -112,9 +112,9 @@ Then periodically use the `process` command to check the status of the jobs, and
 
 ## The Job file
 
-By default, the render cli stores jobs in `./joblist.csv` though you can override this (for all comamnds) by specifying `--jobfile <FILE>`.
+By default, the render cli stores jobs in `./joblist.csv` though you can override this (for all comamnds) by specifying `--jobfile <FILE>` or `-j <FILE>`.
 
-As the file is a CSV, you can manage your jobs in a spreadsheet e.g. Excel if you need to make changes to jobs. E.g. to re-run with a different sample count or percentage, you can change the states back to 'Pending' and update the job properties. This allows you to operate on multiple jobs at once.
+As the file is a CSV, you can manage your jobs in a spreadsheet e.g. Excel if you need to make changes to jobs. E.g. to re-run with a different sample count or percentage, you can change the states back to 'Pending' and update the job properties. This allows you to operate on multiple jobs at once. Make sure Excel doesn't have the file locked though when you have stuff to write to it.
 
 ## Watching your job as it is processed
 
@@ -136,3 +136,13 @@ As the file is a CSV, you can manage your jobs in a spreadsheet e.g. Excel if yo
 - Once a job is complete, and your run the cli `process` command, it should download the result and, once all parts of a job are complete, assembly the results into ~/rendering/finished_renders/*jobname*
 
 - A while later, the Desired vCPUs will drop again to zero, and the EC2 instance, and ECS cluster will shut down. Again, this doesn't happen immediately, in case you submit more jobs, but it should go down within a few minutes.
+
+## Including additional files
+
+If you have files which can't be packed into the blend, such as a video file to be used as a texture, you can add them to the job with the `-a <FILE>` argument when calling the `add` command. Any such files will be included in the root of the zip which is pushed to S3, and will thus be extracted into the same folder in the docker container. You should reference files using relative paths from your blend, and have them in the same directory.
+
+## Extra hook scripts
+
+Let's say you have some additional logic you want to run in the docker container before your job executes. For example, downloading additional files from S3 which are too bulky to include with every job. You can handle this using the `pre_render.sh` hook script. You should include this script in your job using the `-a` option described above. The script will run in bash with the current directory being the directory where the blend is extracted.
+
+Similaryly use `post_render.sh` for post render actions. Anything you want to put in the output zip which is automatically uploaded, copy it to `/tmp/render_output`.

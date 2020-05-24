@@ -1,4 +1,4 @@
-FROM petebeat/blenderbase:dev0.4
+FROM petebeat/blenderbase:dev0.9
 
 LABEL authors="Peter Reay (peterareay@hotmail.com)"
 
@@ -8,4 +8,3 @@ ADD ./scripts/* /root/scripts/
 # Invoke Blender. The 'command' arguments are passed through
 # to this script when docker is invoked
 ENTRYPOINT ["/bin/bash", "/root/scripts/process_job.sh"]
-#ENTRYPOINT ["/bin/bash"]

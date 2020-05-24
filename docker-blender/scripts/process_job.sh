@@ -39,6 +39,22 @@ mkdir ${BLEND_DIR}
 aws s3 cp "s3://${RENDER_SOURCE_BUCKET}/${SOURCE_OBJECT}" "${SOURCE_LOCAL_ZIP}"
 unzip "${SOURCE_LOCAL_ZIP}" -d "${BLEND_DIR}"
 
+# Pre-render hook script
+PRE_RENDER_HOOK=${BLEND_DIR}/pre_render.sh
+
+if [ -f ${PRE_RENDER_HOOK} ]; then
+    echo "Executing hook_script pre_render.sh"
+    dos2unix ${PRE_RENDER_HOOK}
+    CURRENT_DIR=`pwd`
+    cd ${BLEND_DIR}
+    chmod 755 ./pre_render.sh
+    ./pre_render.sh
+    cd ${CURRENT_DIR}
+    echo "Finished hook_script pre_render.sh"
+else
+    echo "No pre_render.sh hook was present"
+fi
+
 BLEND_FILE=${BLEND_DIR}/job.blend
 
 # Run blender with the appropriate arguments
@@ -50,6 +66,22 @@ ${BLENDER} -b -noaudio "${BLEND_FILE}" -S "${RENDER_SCENE}" --python ${PYTHON_SC
     --step ${RENDER_STEP} \
     --startframe ${RENDER_STARTFRAME} \
     --endframe ${RENDER_ENDFRAME}
+
+# Post render hook script
+POST_RENDER_HOOK=${BLEND_DIR}/post_render.sh
+
+if [ -f ${POST_RENDER_HOOK} ]; then
+    echo "Executing hook_script post_render.sh"
+    dos2unix ${POST_RENDER_HOOK}
+    CURRENT_DIR=`pwd`
+    cd ${BLEND_DIR}
+    chmod 755 ./post_render.sh
+    ./post_render.sh
+    cd ${CURRENT_DIR}
+    echo "Finished hook_script post_render.sh"
+else
+    echo "No post_render.sh hook was present"
+fi
 
 # Push the result to S3
 cd ${OUTPUT_DIR}

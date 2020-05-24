@@ -1,7 +1,7 @@
 FROM nvidia/cuda
 
 # Largely based off https://github.com/ikester/blender-docker but updated
-# to Blender 2.82, and include some additional dependencies
+# to Blender 2.82a, and include some additional dependencies
 LABEL authors="Peter Reay (peterareay@hotmail.com)"
 
 # A base image including Blender and its dependencies. This is a 
@@ -19,6 +19,7 @@ RUN apt-get update && \
 		libxrender1 \
 		zip \
 		unzip \
+		dos2unix \
 		xz-utils && \
 	apt-get -y autoremove && \
 	rm -rf /var/lib/apt/lists/*
