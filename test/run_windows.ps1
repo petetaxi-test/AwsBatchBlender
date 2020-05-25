@@ -6,7 +6,7 @@ docker run -it --rm `
    -e AWS_SECRET_ACCESS_KEY=$Env:AWS_SECRET_ACCESS_KEY `
    -e RENDER_SOURCE_BUCKET=fast-render-6-renderblendbucket-1022vic6ux2pp `
    -e RENDER_DEST_BUCKET=fast-render-6-renderresultsbucket-1gfiu6mk4ovpg `
-   petebeat/blender:dev0.9 `
-   -b d79a00db78843195 -S "Scene" -x 1920 -y 1080 -s 16 -p 25 -f 1 -e 1 -t 1
+   petebeat/blender:dev0.10 `
+   -b d55650d599927f71 -S "CampFire" -x 1920 -y 1080 -s 64 -p 25 -f 140 -e 140 -t 1
 
 

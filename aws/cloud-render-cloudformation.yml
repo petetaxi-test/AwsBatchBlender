@@ -303,7 +303,7 @@ Resources:
           !Ref RenderingRole
         ReadonlyRootFilesystem: false
         Vcpus: 16
-        Image: petebeat/blender:dev0.7
+        Image: petebeat/blender:dev0.10
         # ResourceRequirements:
           # - 
           #   Type: GPU

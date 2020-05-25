@@ -33,11 +33,11 @@ ENV PATH="~/.local/bin/aws:~/.local/bin:/usr/local/blender:${PATH}"
 ENV PYTHONPATH="/root/scripts/:${PYTHONPATH}"
 
 # Which version of Blender to install
-ENV BLENDER_BZ2_URL https://download.blender.org/release/Blender2.82/blender-2.82a-linux64.tar.xz
+ENV BLENDER_XZ_URL https://builder.blender.org/download/blender-2.83-7e9480b6cd74-linux64.tar.xz
 
 # Install Blender into /usr/local/blender
 RUN mkdir /usr/local/blender && \
-	curl -SL "$BLENDER_BZ2_URL" -o blender.tar.xz && \
+	curl -SL "$BLENDER_XZ_URL" -o blender.tar.xz && \
 	tar -Jxvf blender.tar.xz -C /usr/local/blender --strip-components=1 && \
 	rm blender.tar.xz
 
