@@ -10,6 +10,9 @@ Outputs:
   RenderJobQueue:
     Description: The AWS Batch queue to place render jobs on
     Value: !Ref RenderJobQueue
+  LargeDiskRenderJobQueue:
+    Description: The AWS Batch queue to place render jobs on
+    Value: !Ref LargeDiskRenderJobQueue
   RenderJobDefinition:
     Description: The Job Definition used to render jobs
     Value: !Ref RenderJobDefinition
@@ -213,6 +216,19 @@ Resources:
       VpcId:
          !Ref RenderingVpc
 
+  # Launch template, give us extra disk space for e.g. large fluid caches
+  LargeDiskLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              DeleteOnTermination: true
+              Encrypted: false
+              VolumeSize: 200
+              VolumeType: gp2
+
   # Batch Compute Environment
   RenderingComputeEnvironment:
     Type: AWS::Batch::ComputeEnvironment
@@ -225,7 +241,7 @@ Resources:
           !GetAtt RenderingInstanceProfile.Arn
         InstanceTypes: 
           - optimal
-        MaxvCpus: 128
+        MaxvCpus: 16
         MinvCpus: 0
         SpotIamFleetRole: 
           !GetAtt SpotFleetTaggingRole.Arn
@@ -240,6 +256,35 @@ Resources:
       ServiceRole:
         !Ref BatchManagementRole
 
+  LargeDiskRenderingComputeEnvironment:
+    Type: AWS::Batch::ComputeEnvironment
+    Description: A compute environment for processing rendering jobs
+    Properties:
+      ComputeResources:
+        BidPercentage: 50
+        DesiredvCpus: 0
+        InstanceRole:
+          !GetAtt RenderingInstanceProfile.Arn
+        InstanceTypes: 
+          - optimal
+        MaxvCpus: 16
+        MinvCpus: 0
+        SpotIamFleetRole: 
+          !GetAtt SpotFleetTaggingRole.Arn
+        Subnets:
+          - !Ref RenderingSubnet1
+          - !Ref RenderingSubnet2
+          - !Ref RenderingSubnet3
+        Type: SPOT
+        SecurityGroupIds:
+          - !Ref RenderingSecurityGroup
+        LaunchTemplate:
+          LaunchTemplateId: !Ref LargeDiskLaunchTemplate
+          Version: $Default
+      Type: MANAGED
+      ServiceRole:
+        !Ref BatchManagementRole
+
   # Batch Rendering Queue
   RenderJobQueue:
     Type: AWS::Batch::JobQueue
@@ -248,6 +293,16 @@ Resources:
       ComputeEnvironmentOrder:
         - Order: 1
           ComputeEnvironment: !Ref RenderingComputeEnvironment
+      State: ENABLED
+      Priority: 1
+
+  LargeDiskRenderJobQueue:
+    Type: AWS::Batch::JobQueue
+    Description: Queue for rendering jobs
+    Properties:
+      ComputeEnvironmentOrder:
+        - Order: 1
+          ComputeEnvironment: !Ref LargeDiskRenderingComputeEnvironment
       State: ENABLED
       Priority: 1
 
@@ -303,7 +358,7 @@ Resources:
           !Ref RenderingRole
         ReadonlyRootFilesystem: false
         Vcpus: 16
-        Image: petebeat/blender:dev0.10
+        Image: petebeat/blender:dev0.14
         # ResourceRequirements:
           # - 
           #   Type: GPU
