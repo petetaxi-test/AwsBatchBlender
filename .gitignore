@@ -105,6 +105,5 @@ venv.bak/
 
 **/blender_distribution
 **/.DS_Store
-rendercli/joblist.csv
-examples/joblist.csv
 test/secrets.ps1
+jobs/
