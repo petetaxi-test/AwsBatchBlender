@@ -62,7 +62,7 @@ def do_run_process():
     scene.render.resolution_x = args.xres
     scene.render.resolution_y = args.yres
     scene.render.use_compositing = True if args.compositing is None else args.compositing
-    scene.render.filepath = args.output if args.output else '/tmp/render_output/'
+    scene.render.filepath = args.output if args.output else f"/mnt/workdrive/{args.blend}/render_output/"
     scene.render.tile_x = 256 if accelerated else 16
     scene.render.tile_y = 256 if accelerated else 16
     

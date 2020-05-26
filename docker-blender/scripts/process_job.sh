@@ -23,6 +23,17 @@ do
  esac
 done
 
+# Mount the working drive to give us extra disk space
+mkdir /mnt/workdrive
+if [[ `lsblk | grep xvda1` ]]; then
+    echo "Device found at /dev/xvda1, mounting work drive"
+    mount /dev/xvda1 /mnt/workdrive
+else
+    echo "No work drive found"
+fi
+df -ah
+
+# Source and destination file names
 SOURCE_OBJECT=Job.${RENDER_BLEND}.zip
 DEST_OBJECT="Job.${RENDER_BLEND}-${RENDER_SCENE}-${RENDER_XRES}x${RENDER_YRES}s${RENDER_SAMPLES}p${RENDER_PERCENTAGE}-from${RENDER_STARTFRAME}to${RENDER_ENDFRAME}j${RENDER_STEP}.Results.zip"
 DEST_OBJECT="$(echo -e "${DEST_OBJECT}" | tr -d '[:space:]')"
@@ -30,9 +41,14 @@ DEST_OBJECT="$(echo -e "${DEST_OBJECT}" | tr -d '[:space:]')"
 BLENDER=/usr/local/blender/blender
 PYTHON_SCRIPT=/root/scripts/do_render.py
 
-BLEND_DIR=/tmp/blend
+UNIQUE_KEY=`cat /proc/sys/kernel/random/uuid`
+WORK_DIR=/mnt/workdrive/${UNIQUE_KEY}
+mkdir ${WORK_DIR}
+echo "Created work dir ${WORK_DIR}"
+
+BLEND_DIR=${WORK_DIR}/blend
 SOURCE_LOCAL_ZIP=${BLEND_DIR}/job.zip
-OUTPUT_DIR=/tmp/render_output
+OUTPUT_DIR=${WORK_DIR}/render_output
 
 # Get the input ready to render
 mkdir ${BLEND_DIR}
@@ -65,7 +81,8 @@ ${BLENDER} -b -noaudio "${BLEND_FILE}" -S "${RENDER_SCENE}" --python ${PYTHON_SC
     --percentage ${RENDER_PERCENTAGE} \
     --step ${RENDER_STEP} \
     --startframe ${RENDER_STARTFRAME} \
-    --endframe ${RENDER_ENDFRAME}
+    --endframe ${RENDER_ENDFRAME} \
+    --blend ${UNIQUE_KEY}
 
 # Post render hook script
 POST_RENDER_HOOK=${BLEND_DIR}/post_render.sh
@@ -87,3 +104,8 @@ fi
 cd ${OUTPUT_DIR}
 zip -r "/tmp/${DEST_OBJECT}" .
 aws s3 cp "/tmp/${DEST_OBJECT}" "s3://${RENDER_DEST_BUCKET}/${DEST_OBJECT}"
+
+# Clean up
+echo "Deleting work directory"
+cd ~
+rm -Rf ${WORK_DIR}
