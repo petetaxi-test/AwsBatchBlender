@@ -31,6 +31,7 @@ def parse_args():
     parser.add_argument('-r', '--dryrun', required=False, type=str, default='False')
     parser.add_argument('--dates', required=False, type=str, default='False')
     parser.add_argument('--stackname', required=False, type=str)
+    parser.add_argument('--large', required=False, type=str, default='False')
     
     return parser.parse_args()
 
@@ -59,6 +60,7 @@ def command_add(args):
     job.yres = args.yres
     job.samples = args.samples
     job.percentage = args.percentage
+    job.use_large_disk = truthy(args.large)
 
     job.prepare()
 
@@ -92,7 +94,7 @@ def command_process(args):
 
 def command_describe(args):
     jobs = load(args)
-    jobs.describe(dates=args.dates in ['true', 'TRUE', 'True'])
+    jobs.describe(dates=truthy(args.dates))
 
 def command_init(args):
     jobs = RenderJobList()
@@ -113,6 +115,9 @@ def command_configure(args):
 
 def is_dry_run(args):
     return args.dryrun in ['true', 'TRUE', 'True']
+
+def truthy(arg):
+    return arg in ['true', 'TRUE', 'True']
 
 def get_manager():
     env = get_environment()

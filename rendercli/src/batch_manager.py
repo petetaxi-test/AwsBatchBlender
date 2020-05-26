@@ -20,7 +20,7 @@ class BatchManager():
     def _submit_batch_job(self, job):
         response = self.batch.submit_job(
             jobName = job.key,
-            jobQueue = self.environment.queueName,
+            jobQueue = self.environment.largeDiskQueueName if job.use_large_disk else self.environment.queueName,
             jobDefinition = self.environment.jobDefinition,
             parameters = {
                 'blend': job.package,

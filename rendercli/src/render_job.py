@@ -31,6 +31,7 @@ class RenderJob():
         self.error = None
         self.startedAt = None
         self.stoppedAt = None
+        self.use_large_disk = False
         
     def prepare(self):
         if not self.package:
@@ -90,6 +91,7 @@ class RenderJob():
         child.startframe = startframe
         child.endframe = endframe
         child.step = step
+        child.use_large_disk = self.use_large_disk
 
         self.add_child(child)
         child.prepare()
@@ -116,7 +118,8 @@ class RenderJob():
             'children': list(map(lambda c: c.to_dict(), self.children)),
             'error': self.error,
             'startedAt': self.startedAt,
-            'stoppedAt': self.stoppedAt
+            'stoppedAt': self.stoppedAt,
+            'use_large_disk': self.use_large_disk
         }
 
     def break_job(self, num_frames):
@@ -166,6 +169,7 @@ class RenderJob():
         result.error = obj['error']
         result.startedAt = obj['startedAt']
         result.stoppedAt = obj['stoppedAt']
+        result.use_large_disk = obj['use_large_disk'] in ['true', 'True', 'TRUE']
 
         if 'children' in obj.keys():
             result.children = list(map(lambda o: RenderJob.from_dict(o), obj['children']))
@@ -181,14 +185,15 @@ class RenderJob():
 
     @classmethod
     def get_str_header(cls):
-        return f"{Fore.WHITE + Style.BRIGHT}    {'Job':<30} {'Scene':<15} {'Start':<5} {'End':<5} {'Step':<5} {'Sam':<5} {'Pct':<4} {'Status':<9} AwsId"
+        return f"{Fore.WHITE + Style.BRIGHT}    {'Job':<30} L {'Scene':<15} {'Start':<5} {'End':<5} {'Step':<5} {'Sam':<5} {'Pct':<4} {'Status':<9} AwsId"
 
     def __str__(self):
         colour_code = Style.NORMAL + (Fore.YELLOW if self.is_root_job else Fore.BLUE)
         parent_mark = '---' if self.is_root_job else ' \\-'
         blend_stub = self._first_and_last(self.description if self.description else self.package, 30)
         cloudid = '' if len(self.children) > 0 else self.cloudid 
-        return f"{colour_code}{parent_mark} {blend_stub:<30} {self.scene[:15]:<15} {self.startframe:<5} {self.endframe:<5} {self.step:<5} {self.samples:<5} {self.percentage:<4} {self.status.name:<9} {cloudid}"
+        large = 'X' if self.use_large_disk else ' '
+        return f"{colour_code}{parent_mark} {blend_stub:<30} {large} {self.scene[:15]:<15} {self.startframe:<5} {self.endframe:<5} {self.step:<5} {self.samples:<5} {self.percentage:<4} {self.status.name:<9} {cloudid}"
 
     def _first_and_last(self, string, length):
         whole_len = len(string)

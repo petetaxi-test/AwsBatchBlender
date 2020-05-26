@@ -5,6 +5,7 @@ class RenderEnvironment():
 
     def __init__(self):
         self.queueName = None
+        self.largeDiskQueueName = None
         self.jobDefinition = None
         self.sourceBucket = None
         self.resultsBucket = None
@@ -12,6 +13,9 @@ class RenderEnvironment():
     def validate(self):
         if self.queueName is None:
             raise Exception('Queue name not set.')
+
+        if self.largeDiskQueueName is None:
+            raise Exception('Large disk queue name not set.')
 
         if self.jobDefinition is None:
             raise Exception('Job definition not set.')
@@ -33,6 +37,7 @@ class RenderEnvironment():
     def _from_dict(cls, obj):
         env = RenderEnvironment()
         env.queueName = obj['queueName']
+        env.largeDiskQueueName = obj['largeDiskQueueName']
         env.jobDefinition = obj['jobDefinition']
         env.sourceBucket = obj['sourceBucket']
         env.resultsBucket = obj['resultsBucket']
@@ -42,6 +47,7 @@ class RenderEnvironment():
     def from_stack_outputs(cls, outputs):
         env = RenderEnvironment()
         env.queueName = RenderEnvironment._after_last_slash(outputs['RenderJobQueue'])
+        env.largeDiskQueueName = RenderEnvironment._after_last_slash(outputs['LargeDiskRenderJobQueue'])
         env.jobDefinition = RenderEnvironment._after_last_slash(outputs['RenderJobDefinition'])
         env.sourceBucket = outputs['SourceBucket']
         env.resultsBucket = outputs['ResultsBucket']
@@ -63,6 +69,7 @@ class RenderEnvironment():
     def _to_dict(self):
         return {
             'queueName': self.queueName,
+            'largeDiskQueueName': self.largeDiskQueueName,
             'jobDefinition': self.jobDefinition,
             'sourceBucket': self.sourceBucket,
             'resultsBucket': self.resultsBucket
