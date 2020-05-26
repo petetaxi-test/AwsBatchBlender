@@ -146,3 +146,17 @@ If you have files which can't be packed into the blend, such as a video file to 
 Let's say you have some additional logic you want to run in the docker container before your job executes. For example, downloading additional files from S3 which are too bulky to include with every job. You can handle this using the `pre_render.sh` hook script. You should include this script in your job using the `-a` option described above. The script will run in bash with the current directory being the directory where the blend is extracted.
 
 Similaryly use `post_render.sh` for post render actions. Anything you want to put in the output zip which is automatically uploaded, copy it to `/tmp/render_output`.
+
+See the examples folder.
+
+## Large data files
+
+If your blend, or any of the additional files you download with the hooks, are large, you might find that your jobs can't run as the container is terminated due to lack of disk space. To solve this, there is an additional compute environment which attaches a 200GB drive to the instance and mounts this at /mnt/workdrive, and extracts the blend to a subfolder here. Bear in mind if your jobs have 16 vCPUs but your max vCPUs is greater, you're likely to have 4 containers running on an EC2 instance, so each container should not take more than 50GB of space. You can change the disk size by editing the Launch Template.
+
+To utilise the large disk compute environment, specify `--large True` when usign the `add` command to add your blend to the jobs file.
+
+## Running locally
+
+If you want to run the docker container locally, you can do so (e.g. for debugging a blend without consuming AWS resources) - see the test/run_windows.ps1 script which shows how to do this. You'll need to put your AWS credentials into the environment variables for the container, and also edit the source and target bucket names to point to your environment (tip - if you've used the `configure` command, these values can be found in `~/.renderconfig`).
+
+You'll need a docker daemon (e.g. Docker for Windows) running to be able to do this.
