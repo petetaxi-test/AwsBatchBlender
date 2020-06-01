@@ -46,6 +46,9 @@ WORK_DIR=/mnt/workdrive/${UNIQUE_KEY}
 mkdir ${WORK_DIR}
 echo "Created work dir ${WORK_DIR}"
 
+# Clean up the workdir whether successful or failed
+trap 'echo "Deleting work directory"; cd ~; rm -Rf ${WORK_DIR}' EXIT
+
 BLEND_DIR=${WORK_DIR}/blend
 SOURCE_LOCAL_ZIP=${BLEND_DIR}/job.zip
 OUTPUT_DIR=${WORK_DIR}/render_output
@@ -105,7 +108,3 @@ cd ${OUTPUT_DIR}
 zip -r "/tmp/${DEST_OBJECT}" .
 aws s3 cp "/tmp/${DEST_OBJECT}" "s3://${RENDER_DEST_BUCKET}/${DEST_OBJECT}"
 
-# Clean up
-echo "Deleting work directory"
-cd ~
-rm -Rf ${WORK_DIR}

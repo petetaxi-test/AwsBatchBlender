@@ -298,7 +298,7 @@ Resources:
 
   LargeDiskRenderJobQueue:
     Type: AWS::Batch::JobQueue
-    Description: Queue for rendering jobs
+    Description: Queue for rendering jobs, with extra disk space for large files
     Properties:
       ComputeEnvironmentOrder:
         - Order: 1
@@ -358,7 +358,7 @@ Resources:
           !Ref RenderingRole
         ReadonlyRootFilesystem: false
         Vcpus: 16
-        Image: petebeat/blender:dev0.14
+        Image: petebeat/blender:dev0.15
         # ResourceRequirements:
           # - 
           #   Type: GPU
