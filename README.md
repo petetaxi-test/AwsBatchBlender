@@ -21,7 +21,7 @@ There is also a cli interface for submitting and managing jobs from the client m
 
 Have a glance through the `cloud-render-cloudformation.yml` template, and particularly ensure you're happy with the `ComputeResources` properties - rendering is going to cost money, and if you understand this you should understand your likely costs. The Minimum cVPUs should be 0 so nothing runs if there are no jobs to process. 
 
-The max vCPUs of 16 and instance type of p3 will mean only a single p3.2xlarge instance will run, but you can scale up to any value you want, or use different instance types. If you're not using GPU instances, remove the `ResourceRequirements` from the JobDefinition, as this indicates a GPU is required to run a job (you can also increase the GPU count if you want).
+In the repo I've set the max vCPUs as 16, and each job to consume 16 vCPUs. This means only one job will run at a time. Once I have things working for me and I'm happy it scales *down* when everything is finished, I've upped the vCPUs as high as 2048 (by editing the Compute Environment in the AWS Batch UI) to get lots to run in parallel. You can really get your results quickly compared to locally rendering on a single PC!
 
 Also: no guarantee is given for the correctness of this - it is just a proof-of-concept I've knocked up in the last few days. I would strongly recommend going into the EC2 console, and verifying that all the instances have indeed closed down after your renders are complete - or a problem could end up costing you a lot.
 
