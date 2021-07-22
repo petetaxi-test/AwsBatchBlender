@@ -10,7 +10,7 @@ All the benefits of AWS Batch
 
 - Scale up and down (to zero) automatically.
 - Automatic choice of EC2 instance types based on the options in your compute environment, and the number and configuration of jobs you submit.
-- The default AMI which AWS Batch selects (for either normal or GPU jobs) includes all the NVIDIA drivers which are needed for CUDA processing. Blender and the CUDA toolkit are set up in the docker containers in this project.
+- The default AMI which AWS Batch selects (for either normal or GPU jobs) includes all the NVIDIA drivers which are needed for CUDA processing. Blender and the CUDA toolkit are set up in the docker containers in this project. Note: I've turned the GPU resource off, because CPU rendering seems to offer cheaper cost per image, and given you can run many in parallel, doesn't necessarily take any longer.
 - Simple CloudFormation setup in your AWS environment.
 
 The jobs run in a docker container with Blender, the CUDA toolkit, and the nvidia drivers installed. You can customize the image if you like - see the docker-blenderbase and docker-blender directories, but you don't need to do this. My versions in the public repository should work - the RenderJobDefinition references a specific public version of this image.
@@ -42,7 +42,7 @@ You should have these installed first:
 - Python 3.x 
 - AWS CLI
 
-If you haven't already, configure aws by typing `aws configure` and enter your AWS Access Key ID and AWS Secret Access Key, and choose your region. Important: choose a region which includes GPU accelerated instances, e.g. `eu-west-1` (Ireland). Or edit the job definition so GPUs aren't required.
+If you haven't already, configure aws by typing `aws configure` and enter your AWS Access Key ID and AWS Secret Access Key, and choose your region. If you want GPU rendering, choose a region which includes GPU accelerated instances, e.g. `eu-west-1` (Ireland).
 
 ### Deploy to AWS
 
