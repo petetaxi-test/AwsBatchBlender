@@ -33,7 +33,7 @@ ENV PATH="~/.local/bin/aws:~/.local/bin:/usr/local/blender:${PATH}"
 ENV PYTHONPATH="/root/scripts/:${PYTHONPATH}"
 
 # Which version of Blender to install
-ENV BLENDER_XZ_URL https://builder.blender.org/download/blender-2.83-7e9480b6cd74-linux64.tar.xz
+ENV BLENDER_XZ_URL https://ftp.nluug.nl/pub/graphics/blender/release/Blender2.93/blender-2.93.1-linux-x64.tar.xz
 
 # Install Blender into /usr/local/blender
 RUN mkdir /usr/local/blender && \
